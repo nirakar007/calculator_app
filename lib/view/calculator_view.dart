@@ -8,181 +8,155 @@ class CalculatorView extends StatefulWidget {
 }
 
 class _CalculatorViewState extends State<CalculatorView> {
-  final _textController = TextEditingController();
-  String displayInput = ""; // To show the current input for calculation
-  bool isNewInput = false; // Flag to track if a new input sequence is starting
-
+  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _textController_expression = TextEditingController();
   List<String> lstSymbols = [
-    "C",
-    "*",
-    "/",
-    "<-",
-    "1",
-    "2",
-    "3",
-    "+",
-    "4",
-    "5",
-    "6",
-    "-",
-    "7",
-    "8",
-    "9",
-    "*",
-    "%",
-    "0",
-    ".",
-    "=",
+    "C", "*", "/", "<-", "1", "2", "3", "+", "4", "5", "6", "-", "7", "8", "9", "*", "%",
+    "0", ".", "=",
   ];
 
-  final _key = GlobalKey<FormState>();
+  String input = "";
+  double firstNum = 0;
+  double secondNum = 0;
+  String operation = "";
+  bool isResultDisplayed = false;
 
-  // Handles button presses
   void _handleButtonPress(String symbol) {
-    setState(() {
-      switch (symbol) {
-        case "C":
-          _textController.clear();
-          displayInput = "";
-          isNewInput = false; // Reset the flag
-          break;
 
-        case "<-":
-          if (_textController.text.isNotEmpty) {
-            _textController.text = _textController.text.substring(0, _textController.text.length - 1);
-          }
-          break;
+    if (symbol == "C") {
+      _textController.clear();
+      _textController_expression.clear();
+      firstNum = 0;
+      secondNum = 0;
+      operation = "";
+      isResultDisplayed = false;
 
-        case "=":
-          _textController.text = _calculateResult();
-          displayInput = ""; // Clear display after calculation
-          isNewInput = true; // Set flag to true after calculation
-          break;
+    } else if (symbol == "<-") {
 
-        default:
-        // Clear input if starting a new sequence
-          if (isNewInput) {
-            _textController.clear();
-            isNewInput = false; // Reset the flag
-          }
-          _textController.text += symbol;
-          displayInput = _textController.text; // Update the displayInput
+      String currentText = _textController.text;
+      if (currentText.isNotEmpty) {
+        _textController.text = currentText.substring(0, currentText.length - 1);
+        _textController_expression.text = currentText.substring(0, currentText.length - 1);
       }
-    });
-  }
+    } else if (symbol == "=") {
 
-  String _calculateResult() {
-    String input = _textController.text;
+      _calculateResult();
+    } else if (symbol == "+" || symbol == "-" || symbol == "*" || symbol == "/") {
+      firstNum = double.tryParse(_textController.text) ?? 0;
+      operation = symbol;
+      _textController.clear();
+      _textController_expression.text += symbol;
+    } else {
 
-    // Check if input contains an operation
-    for (String op in ["+", "-", "*", "/", "%"]) {
-      if (input.contains(op)) {
-        // Split the input into operands based on the operator
-        List<String> parts = input.split(op);
-        if (parts.length == 2) {
-          // Parse the operands
-          double firstOperand = double.tryParse(parts[0].trim()) ?? 0;
-          double secondOperand = double.tryParse(parts[1].trim()) ?? 0;
-
-          // Perform the calculation based on the operation
-          switch (op) {
-            case "+":
-              return (firstOperand + secondOperand).toString();
-
-            case "-":
-              return (firstOperand - secondOperand).toString();
-
-            case "*":
-              return (firstOperand * secondOperand).toString();
-
-            case "/":
-              return secondOperand != 0
-                  ? (firstOperand / secondOperand).toString()
-                  : "Error"; // Handle zero division
-
-            case "%":
-              return (firstOperand % secondOperand).toString();
-          }
-        }
+      if (isResultDisplayed) {
+        _textController.text = symbol;
+        _textController_expression.text += symbol;
+        isResultDisplayed = false;
+      } else {
+        _textController.text += symbol;
+        _textController_expression.text += symbol;
       }
     }
-    // Invalid operation
-    return input;
+  }
+
+  void _calculateResult() {
+    secondNum = double.tryParse(_textController.text) ?? 0;
+    double result = 0;
+
+
+    if (operation == "+") {
+      result = firstNum + secondNum;
+    } else if (operation == "-") {
+      result = firstNum - secondNum;
+    } else if (operation == "*") {
+      result = firstNum * secondNum;
+    } else if (operation == "/") {
+      if (secondNum != 0) {
+        result = firstNum / secondNum;
+      } else {
+        _textController.text = "Error";
+        isResultDisplayed = true;
+        return;
+      }
+    }
+
+
+    _textController.text = result.toString();
+    isResultDisplayed = true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calculator App'),
+        title: const Text('Nirakar s Calculator '),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Form(
-          key: _key,
-          child: Column(
-            children: [
-              // Display the input being stored for calculation
-              Text(
-                displayInput,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+        child: Column(
+          children: [
+            TextField(
+              controller: _textController_expression,
+              readOnly: true,
+              textDirection: TextDirection.rtl,
+              decoration: const InputDecoration(
+                // border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 8),
+              style: const TextStyle(
+                fontSize: 20,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _textController,
+              readOnly: true,
+              textDirection: TextDirection.rtl,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
 
-              // Input field
-              TextFormField(
-                textDirection: TextDirection.rtl, // Start text input from the right
-                controller: _textController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(
-                height: 8,
-              ),
 
-              // Grid of buttons
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 8.0,
-                    mainAxisSpacing: 8.0,
-                  ),
-                  itemCount: lstSymbols.length,
-                  itemBuilder: (context, index) {
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.lightGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(0),
-                        ),
-                      ),
-                      onPressed: () {
-                        _handleButtonPress(lstSymbols[index]);
-                      },
-                      child: Text(
-                        lstSymbols[index],
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  },
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 8.0,
+                  mainAxisSpacing: 8.0,
                 ),
+                itemCount: lstSymbols.length,
+                itemBuilder: (context, index) {
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(165, 75, 255, 160),
+                      foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      String symbol = lstSymbols[index];
+                      _handleButtonPress(symbol);
+                    },
+                    child: Text(
+                      lstSymbols[index],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
